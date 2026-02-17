@@ -52,3 +52,11 @@ CodeCoverage/
 *.VisualState.xml
 TestResult.xml
 nunit-*.xml
+
+# Generated workflow artifacts
+.assembled-orchestrator-prompt.md
+event_payload.json
+
+# Local testing secrets (act)
+.secrets
+.actrc
