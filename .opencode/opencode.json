@@ -1,0 +1,21 @@
+{
+  "mcp": {
+    "sequential-thinking": {
+      "type": "local",
+      "command": [
+        "npx",
+        "-y",
+        "@modelcontextprotocol/server-sequential-thinking"
+      ]     
+    },
+    "memory": {
+      "type": "local",
+      "command": [
+        "npx",    
+        "-y",
+        "@modelcontextprotocol/server-memory"
+      ]
+    }
+  },
+  "$schema": "https://opencode.ai/config.json"
+}
