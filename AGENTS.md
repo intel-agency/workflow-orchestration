@@ -1,16 +1,18 @@
 ---
 description: Project instructions for coding agents
 scope: repository
-role: Workflow Launch Queue Agent
+role: Orchestrator Agent
 ---
 
 <instructions>
   <purpose>
     <summary>
-      This project runs an Agno `AgentOS` workflow that:
-      1. Reads app requests from Notion.
-      2. Generates planning docs.
-      3. Creates a GitHub repo from a template and pushes docs.
+      This repo is a GitHub Actions-based AI orchestration system. When GitHub events fire
+      (issues, PR comments, PR reviews, etc.), the `orchestrator-agent` workflow:
+      1. Assembles a structured prompt from a template + the event JSON payload.
+      2. Spins up a devcontainer with the full toolchain pre-installed.
+      3. Runs `opencode --agent Orchestrator` inside the container, which reads the prompt
+         and delegates work to specialized sub-agents defined in `.opencode/agents/`.
     </summary>
     <guidance>
       Use this file as the default operating guide for coding agents working in this repo.
@@ -18,144 +20,127 @@ role: Workflow Launch Queue Agent
   </purpose>
 
   <tech_stack>
-    <item>Python `3.12` (managed with `uv`)</item>
-    <item>Agno / AgentOS</item>
-    <item>FastAPI app exposure via AgentOS</item>
-    <item>Notion API via `notion-client`</item>
-    <item>GitHub API via `PyGithub` and local `git`</item>
-    <item>Optional Next.js UI in `agent-ui/`</item>
+    <item>opencode CLI — primary agent runtime (`opencode --model zai-coding-plan/glm-5 --agent Orchestrator`)</item>
+    <item>ZhipuAI GLM models via `ZHIPU_API_KEY`</item>
+    <item>GitHub Actions — workflow trigger and runner</item>
+    <item>devcontainers/ci — executes opencode inside a reproducible container</item>
+    <item>.NET SDK 10 + Aspire workload + Avalonia templates (installed in devcontainer)</item>
+    <item>Bun — JS runtime (installed in devcontainer)</item>
+    <item>uv — Python package manager (installed in devcontainer)</item>
+    <item>MCP servers: `@modelcontextprotocol/server-sequential-thinking`, `@modelcontextprotocol/server-memory`</item>
   </tech_stack>
 
   <repository_map>
     <entry>
-      <path>app/main.py</path>
-      <description>Primary AgentOS app entrypoint (`app.main:app`)</description>
+      <path>.github/workflows/orchestrator-agent.yml</path>
+      <description>Primary workflow — assembles prompt, logs into GHCR, runs opencode in devcontainer</description>
     </entry>
     <entry>
-      <path>agents.py</path>
-      <description>Agent definitions (`notion_agent`, `plan_docs_agent`, `gh_repo_agent`)</description>
+      <path>.github/workflows/prompts/orchestrator-agent-prompt.md</path>
+      <description>Prompt template with `__EVENT_DATA__` placeholder replaced at runtime with structured event context + raw JSON</description>
     </entry>
     <entry>
-      <path>team.py</path>
-      <description>Team orchestration (`workflow_team`)</description>
+      <path>.opencode/agents/orchestrator.md</path>
+      <description>Orchestrator agent definition — coordinates all specialist agents, never writes code directly</description>
     </entry>
     <entry>
-      <path>tools/notion_api_toolkit.py</path>
-      <description>Notion search + page content tools</description>
+      <path>.opencode/agents/</path>
+      <description>All specialist agent definitions (developer, code-reviewer, planner, devops-engineer, github-expert, etc.)</description>
     </entry>
     <entry>
-      <path>tools/github_toolkit.py</path>
-      <description>GitHub create/clone/push utilities</description>
+      <path>.opencode/commands/</path>
+      <description>Reusable command prompts (e.g., `orchestrate-new-project.md`, `grind-pr-reviews.md`, `fix-failing-workflows.md`)</description>
     </entry>
     <entry>
-      <path>db.py</path>
-      <description>Postgres connectivity + SQLite fallback</description>
+      <path>.opencode/opencode.json</path>
+      <description>opencode config — MCP server definitions (sequential-thinking, memory)</description>
     </entry>
     <entry>
-      <path>models.py</path>
-      <description>LLM provider/model wiring and disabled-model reasons</description>
+      <path>.devcontainer/Dockerfile</path>
+      <description>Devcontainer image — installs .NET SDK, Bun, uv, and opencode CLI</description>
     </entry>
     <entry>
-      <path>plan_doc_templates/</path>
-      <description>Prompt + markdown templates consumed by plan-docs flow</description>
+      <path>test/</path>
+      <description>Shell-based tests: devcontainer build, tool availability, and prompt assembly validation</description>
     </entry>
     <entry>
-      <path>deploy/compose.yml</path>
-      <description>Local container orchestration (postgres, pgvector, workflow, agentui)</description>
-    </entry>
-    <entry>
-      <path>tests/</path>
-      <description>Unit/integration-style tests and smoke scripts</description>
+      <path>test/fixtures/</path>
+      <description>Sample GitHub webhook payloads for local testing (issues, PRs, comments, reviews)</description>
     </entry>
   </repository_map>
 
   <environment_setup>
     <step order="1">
-      <title>Create env file</title>
-      <instruction>Copy `.env.example` to `.env` and set required values.</instruction>
+      <title>Required secrets (GitHub Actions)</title>
+      <instruction>`ZHIPU_API_KEY` — ZhipuAI model access; set in repo Settings → Secrets.</instruction>
+      <instruction>`GITHUB_TOKEN` — provided automatically by Actions; no manual setup needed.</instruction>
     </step>
     <step order="2">
-      <title>Install deps</title>
-      <instruction>`uv sync --dev`</instruction>
-    </step>
-    <step order="3">
-      <title>Important env vars</title>
-      <instruction>Required for Notion flow: `WLQ_NOTION_API_KEY`, `WLQ_NOTION_DATABASE_ID`</instruction>
-      <instruction>Required for GitHub flow: `GH_AGNO_TOOLS_TOKEN`</instruction>
-      <instruction>Common model keys (pick one working provider): `CLOUD_CODE_GEMINI_CODE_ASSIST_API_KEY`, `OPENROUTER_AGNO_API_KEY`, `ZAI_API_KEY`, etc.</instruction>
-      <instruction>DB defaults are in `db.py`; Postgres is preferred, SQLite fallback is automatic.</instruction>
-      <instruction>Use an async DB URL when pointing to Postgres from app runtime/tests: `DATABASE_URL=postgresql+asyncpg://&lt;user&gt;:&lt;pass&gt;@&lt;host&gt;:&lt;port&gt;/&lt;db&gt;`</instruction>
+      <title>Devcontainer image cache</title>
+      <instruction>Image is cached at `ghcr.io/${{ github.repository }}/devcontainer`. First run builds it; subsequent runs pull from cache.</instruction>
+      <instruction>Login uses `GITHUB_TOKEN` via `docker/login-action` targeting `ghcr.io`.</instruction>
     </step>
   </environment_setup>
 
   <runbook>
     <run>
-      <name>Local app run</name>
-      <command>`uv run python -m app.main`</command>
-      <note>Service listens on port `7777` in local mode.</note>
+      <name>Trigger the workflow</name>
+      <note>Open or comment on an issue, open/push to a PR, or submit a review. The `orchestrator-agent` workflow fires automatically.</note>
     </run>
     <run>
-      <name>Docker compose run</name>
-      <command>`docker compose -f deploy/compose.yml up --build`</command>
-      <note>Workflow app is exposed at `http://localhost:7777`.</note>
+      <name>Test devcontainer build</name>
+      <command>`bash test/test-devcontainer-build.sh`</command>
     </run>
     <run>
-      <name>Agent UI (optional)</name>
-      <command>`cd agent-ui`</command>
-      <command>`npm run dev` (or `pnpm dev` / `bun run dev` depending on your local tooling)</command>
-      <note>UI default port is `3000`.</note>
+      <name>Test tool availability inside devcontainer</name>
+      <command>`bash test/test-devcontainer-tools.sh`</command>
+    </run>
+    <run>
+      <name>Test prompt assembly</name>
+      <command>`bash test/test-prompt-assembly.sh`</command>
     </run>
   </runbook>
 
   <testing_guidance>
-    <guidance>Use `uv` to run Python tooling (plain `pytest` may not be on PATH).</guidance>
+    <guidance>Tests are shell scripts in `test/`. Run them directly with `bash`.</guidance>
     <commands>
-      <command>Run all tests: `uv run python -m pytest`</command>
-      <command>Run focused tests: `uv run python -m pytest tests/test_notion_api_toolkit.py -q`</command>
-      <command>Run focused tests: `uv run python -m pytest tests/test_github_toolkit.py -q`</command>
+      <command>Run all tests: `bash test/test-devcontainer-build.sh && bash test/test-devcontainer-tools.sh && bash test/test-prompt-assembly.sh`</command>
+      <command>Prompt assembly test uses fixtures from `test/fixtures/` — add new fixture payloads there when testing new event types.</command>
     </commands>
-    <known_state date="2026-02-07">
-      <item>`tests/test_notion_api_toolkit.py` has 2 failing assertions expecting `NotionClient(auth=...)` only.</item>
-      <item>Implementation now calls `NotionClient(auth=..., notion_version="2025-09-03")`.</item>
-      <item>If you touch Notion toolkit init behavior, update those assertions accordingly.</item>
-    </known_state>
   </testing_guidance>
 
   <coding_conventions>
     <rule>Keep changes minimal and targeted to the requested behavior.</rule>
-    <rule>Prefer typed Python (`dict[str, Any]`, etc.) and keep function signatures explicit.</rule>
-    <rule>Reuse existing patterns in `agents.py`, `team.py`, and toolkit classes.</rule>
     <rule>Avoid broad refactors unless the task explicitly requires them.</rule>
     <rule>Do not hardcode secrets/tokens.</rule>
-    <rule>Keep template and prompt file edits in `plan_doc_templates/` backward compatible when possible.</rule>
+    <rule>When editing `.github/workflows/prompts/orchestrator-agent-prompt.md`, preserve the `__EVENT_DATA__` placeholder — the workflow relies on it for sed substitution.</rule>
+    <rule>When editing `.opencode/agents/orchestrator.md`, keep the delegation-depth limit (≤2) and the "never write code directly" constraint intact.</rule>
+    <rule>Pin action versions by SHA in workflow files (already enforced for `actions/checkout` and `docker/login-action`).</rule>
   </coding_conventions>
 
   <agent_specific_guardrails>
-    <rule>Preserve workflow sequencing:
-      1. Notion retrieval
-      2. Planning doc generation
-      3. GitHub repo creation + commit/push
+    <rule>The Orchestrator agent must never write code directly — it delegates to specialist agents via the `task` tool.</rule>
+    <rule>Prompt assembly pipeline:
+      1. Read template from `.github/workflows/prompts/orchestrator-agent-prompt.md`.
+      2. Prepend structured event context (event name, action, actor, repo, ref, SHA).
+      3. Append raw event JSON from `${{ toJson(github.event) }}`.
+      4. Write assembled prompt to `.assembled-orchestrator-prompt.md` and export path via `GITHUB_ENV`.
     </rule>
-    <rule>Keep file-path handling explicit in GitHub operations:
-      - Save generated docs inside cloned repo path.
-      - Use repo-relative paths when committing existing files.
-    </rule>
-    <rule>Maintain DB fallback behavior in `db.py` unless explicitly asked to change it.</rule>
-    <rule>If changing model defaults in `models.py`, keep `MODEL_INIT_ERRORS` and disabled-reason tracking intact.</rule>
+    <rule>Do not add a second top-level `name:`, `on:`, or `jobs:` block to any single workflow YAML file — duplicate keys silently overwrite and drop triggers.</rule>
+    <rule>`.opencode/` is checked out by `actions/checkout`; do not COPY it separately in the Dockerfile.</rule>
   </agent_specific_guardrails>
 
   <validation_before_handoff>
-    <step order="1">Run focused tests for touched modules.</step>
+    <step order="1">Run shell tests: `bash test/test-prompt-assembly.sh` for prompt changes; `bash test/test-devcontainer-tools.sh` for Dockerfile changes.</step>
     <step order="2">
-      Run at least one smoke check for imports/startup:
-      PowerShell:
-      `$env:DATABASE_URL='postgresql+asyncpg://postgres:postgres@localhost:5432/workflow'; uv run python -c "import app.main; print('ok')"`
+      Validate workflow YAML has exactly one top-level `name:`, `on:`, and `jobs:` key:
+      `grep -c "^name:" .github/workflows/orchestrator-agent.yml  # expect 1`
     </step>
     <step order="3">
       Summarize:
       - What changed
       - What was validated
-      - Any remaining risk (especially credential-dependent integration paths)
+      - Any remaining risk (especially secret-dependent paths or devcontainer image cache misses)
     </step>
   </validation_before_handoff>
 
