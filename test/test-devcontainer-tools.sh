@@ -15,14 +15,14 @@ check_tool() {
   if output=$(eval "$cmd" 2>&1); then
     if [[ -n "$expected" && ! "$output" =~ $expected ]]; then
       echo "  FAIL: $name — unexpected version: $output (expected match: $expected)"
-      ((FAIL++))
+      FAIL=$((FAIL + 1))
     else
       echo "  PASS: $name — $output"
-      ((PASS++))
+      PASS=$((PASS + 1))
     fi
   else
     echo "  FAIL: $name — command failed: $cmd"
-    ((FAIL++))
+    FAIL=$((FAIL + 1))
   fi
 }
 
