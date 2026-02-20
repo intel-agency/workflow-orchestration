@@ -81,7 +81,8 @@ jobs:
             GITHUB_TOKEN
             ORCHESTRATOR_PROMPT_PATH
           runCmd: |
-            opencode \
+            opencode run \
               --model zai-coding-plan/glm-5 \
               --agent Orchestrator \
-              --prompt "$ORCHESTRATOR_PROMPT_PATH"
+              --print-logs \
+              "$(cat "$ORCHESTRATOR_PROMPT_PATH")"
