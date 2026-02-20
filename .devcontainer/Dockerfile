@@ -21,16 +21,19 @@ RUN dotnet workload install aspire \
 
 # Bun
 RUN curl -fsSL https://bun.sh/install | bash \
-    && ln -sf /root/.bun/bin/bun /usr/local/bin/bun
+    && cp /root/.bun/bin/bun /usr/local/bin/bun \
+    && chmod +x /usr/local/bin/bun
 
 # uv (Astral Python package manager)
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh \
-    && ln -sf /root/.local/bin/uv /usr/local/bin/uv \
-    && ln -sf /root/.local/bin/uvx /usr/local/bin/uvx
+    && cp /root/.local/bin/uv /usr/local/bin/uv \
+    && cp /root/.local/bin/uvx /usr/local/bin/uvx \
+    && chmod +x /usr/local/bin/uv /usr/local/bin/uvx
 
 # opencode CLI
 RUN curl -fsSL https://opencode.ai/install | bash \
-    && ln -sf /root/.opencode/bin/opencode /usr/local/bin/opencode
+    && cp /root/.opencode/bin/opencode /usr/local/bin/opencode \
+    && chmod +x /usr/local/bin/opencode
 
 # cp AGENTS.md to the workspace root for opencode CLI's use
 COPY AGENTS.md /workspace/AGENTS.md
