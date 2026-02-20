@@ -56,8 +56,24 @@ role: Orchestrator Agent
       <description>opencode config — MCP server definitions (sequential-thinking, memory)</description>
     </entry>
     <entry>
-      <path>.devcontainer/Dockerfile</path>
-      <description>Devcontainer image — installs .NET SDK, Bun, uv, and opencode CLI</description>
+      <path>.github/.devcontainer/Dockerfile</path>
+      <description>Devcontainer image — installs .NET SDK, Bun, uv, and opencode CLI (build context for publish-docker workflow)</description>
+    </entry>
+    <entry>
+      <path>.github/.devcontainer/devcontainer.json</path>
+      <description>Build-time devcontainer config — references Dockerfile and includes Features (node, python, gh CLI)</description>
+    </entry>
+    <entry>
+      <path>.devcontainer/devcontainer.json</path>
+      <description>Consumer devcontainer config — pulls prebuilt image from GHCR, no local build required</description>
+    </entry>
+    <entry>
+      <path>.github/workflows/publish-docker.yml</path>
+      <description>Builds raw Dockerfile and pushes to GHCR with main-latest and main-&lt;run_number&gt; tags</description>
+    </entry>
+    <entry>
+      <path>.github/workflows/prebuild-devcontainer.yml</path>
+      <description>Layers devcontainer Features on the published Docker image, triggered by workflow_run after Publish Docker</description>
     </entry>
     <entry>
       <path>test/</path>
@@ -77,8 +93,9 @@ role: Orchestrator Agent
     </step>
     <step order="2">
       <title>Devcontainer image cache</title>
-      <instruction>Image is cached at `ghcr.io/${{ github.repository }}/devcontainer`. First run builds it; subsequent runs pull from cache.</instruction>
+      <instruction>Image is cached at `ghcr.io/${{ github.repository }}/devcontainer`. `publish-docker.yml` builds the raw Dockerfile; `prebuild-devcontainer.yml` layers Features on top.</instruction>
       <instruction>Login uses `GITHUB_TOKEN` via `docker/login-action` targeting `ghcr.io`.</instruction>
+      <instruction>Set repo variable `VERSION_PREFIX` (e.g., `1.0`) for versioned image tags (`main-1.0.&lt;run_number&gt;`).</instruction>
     </step>
   </environment_setup>
 
@@ -128,6 +145,7 @@ role: Orchestrator Agent
     </rule>
     <rule>Do not add a second top-level `name:`, `on:`, or `jobs:` block to any single workflow YAML file — duplicate keys silently overwrite and drop triggers.</rule>
     <rule>`.opencode/` is checked out by `actions/checkout`; do not COPY it separately in the Dockerfile.</rule>
+    <rule>The Dockerfile lives at `.github/.devcontainer/Dockerfile`. The consumer `.devcontainer/devcontainer.json` uses `"image:"` — it does not build locally.</rule>
   </agent_specific_guardrails>
 
   <validation_before_handoff>

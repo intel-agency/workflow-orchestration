@@ -1,0 +1,23 @@
+{
+  "name": "workflow-orchestration-build",
+  "image": "ghcr.io/intel-agency/workflow-orchestration:main-latest",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": { "version": "20" },
+    "ghcr.io/devcontainers/features/python:1": { "version": "3.12" },
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+  "containerEnv": {
+    "DOTNET_ROOT": "/usr/share/dotnet"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-dotnettools.csdevkit",
+        "ms-python.python",
+        "oven.bun-vscode",
+        "avaloniateam.vscode-avalonia"
+      ]
+    }
+  },
+  "remoteUser": "vscode"
+}

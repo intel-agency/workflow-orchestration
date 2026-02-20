@@ -35,7 +35,4 @@ RUN curl -fsSL https://opencode.ai/install | bash \
     && cp /root/.opencode/bin/opencode /usr/local/bin/opencode \
     && chmod +x /usr/local/bin/opencode
 
-# cp AGENTS.md to the workspace root for opencode CLI's use
-COPY AGENTS.md /workspace/AGENTS.md
-
 

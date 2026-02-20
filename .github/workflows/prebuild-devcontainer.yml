@@ -1,14 +1,18 @@
-name: prebuild-devcontainer
+name: Pre-build dev container image
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - '.devcontainer/**'
-      - '.github/workflows/prebuild-devcontainer.yml'
+  workflow_run:
+    workflows: [Publish Docker]
+    types:
+      - completed
   schedule:
     - cron: '0 0 * * 1' # Weekly on Monday at midnight UTC
   workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: intel-agency/workflow-orchestration/devcontainer
+  VERSION_IMAGE_TAG: "${{ vars.VERSION_PREFIX }}.${{ github.run_number }}"
 
 jobs:
   prebuild:
@@ -16,6 +20,9 @@ jobs:
     permissions:
       contents: read
       packages: write
+    if: >-
+      github.event_name != 'workflow_run' ||
+      github.event.workflow_run.conclusion == 'success'
 
     steps:
       - name: Checkout repository
@@ -30,7 +37,19 @@ jobs:
 
       - name: Pre-build dev container image
         uses: devcontainers/ci@v0.3
+        id: prebuild
         with:
-          imageName: ghcr.io/${{ github.repository }}/devcontainer
-          cacheFrom: ghcr.io/${{ github.repository }}/devcontainer
-          push: always
+          subFolder: .github
+          imageName: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          cacheFrom: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          imageTag: ${{ github.ref_name }}-latest,${{ github.ref_name }}-${{ env.VERSION_IMAGE_TAG }}
+          push: never
+
+      - name: Push images to registry
+        env:
+          VERSIONED_IMAGE_FULL: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}-${{ env.VERSION_IMAGE_TAG }}
+          LATEST_IMAGE_FULL: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}-latest
+        run: |
+          set -euo pipefail
+          docker push "$VERSIONED_IMAGE_FULL"
+          docker push "$LATEST_IMAGE_FULL"

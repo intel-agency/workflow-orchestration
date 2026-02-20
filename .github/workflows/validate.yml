@@ -26,7 +26,7 @@ jobs:
           chmod +x /usr/local/bin/hadolint
 
       - name: Lint Dockerfile
-        run: hadolint .devcontainer/Dockerfile
+        run: hadolint .github/.devcontainer/Dockerfile
 
       - name: Lint shell scripts
         run: |
@@ -74,6 +74,7 @@ jobs:
       - name: Build devcontainer and run smoke tests
         uses: devcontainers/ci@v0.3
         with:
+          subFolder: .github
           imageName: ghcr.io/${{ github.repository }}/devcontainer
           cacheFrom: ghcr.io/${{ github.repository }}/devcontainer
           push: never
