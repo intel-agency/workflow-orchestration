@@ -29,7 +29,8 @@ RUN curl -LsSf https://astral.sh/uv/install.sh | sh \
     && ln -sf /root/.local/bin/uvx /usr/local/bin/uvx
 
 # opencode CLI
-RUN curl -fsSL https://opencode.ai/install | bash
+RUN curl -fsSL https://opencode.ai/install | bash \
+    && ln -sf /root/.opencode/bin/opencode /usr/local/bin/opencode
 
 # cp AGENTS.md to the workspace root for opencode CLI's use
 COPY AGENTS.md /workspace/AGENTS.md
