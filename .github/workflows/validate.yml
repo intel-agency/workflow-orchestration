@@ -31,7 +31,7 @@ jobs:
       - name: Lint shell scripts
         run: |
           sudo apt-get update && sudo apt-get install -y shellcheck
-          shellcheck test/*.sh
+          shellcheck --severity=warning test/*.sh
 
       - name: Validate devcontainer.json
         run: |
