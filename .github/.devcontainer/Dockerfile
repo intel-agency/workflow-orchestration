@@ -5,7 +5,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 # System dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
       curl unzip git ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/*888888888888888888888888888888888888888888888888888888
 
 # .NET SDK 10.0.102 LTS
 RUN curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin \
@@ -15,9 +15,8 @@ RUN curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin \
 ENV DOTNET_ROOT=/usr/share/dotnet
 ENV PATH="${PATH}:${DOTNET_ROOT}:${DOTNET_ROOT}/tools"
 
-# .NET Aspire workload + Avalonia templates
-RUN dotnet workload install aspire \
-    && dotnet new install Avalonia.Templates
+# Avalonia templates
+RUN dotnet new install Avalonia.Templates
 
 # Bun
 RUN curl -fsSL https://bun.sh/install | bash \
