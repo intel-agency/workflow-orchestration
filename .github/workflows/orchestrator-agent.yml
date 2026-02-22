@@ -72,18 +72,19 @@ jobs:
         env:
           ZHIPU_API_KEY: ${{ secrets.ZHIPU_API_KEY }} 
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
+        with: 
           imageName: ghcr.io/${{ github.repository }}/devcontainer
           imageTag: ${{ github.ref_name }}-latest
-          cacheFrom: ghcr.io/${{ github.repository }}/devcontainer
+          cacheFrom: ghcr.io/${{ github.repository }}/devcontainer      
           push: never
           env: |
             ZHIPU_API_KEY
             GITHUB_TOKEN
             ORCHESTRATOR_PROMPT_PATH
           runCmd: |
-            opencode run \
+            opencode \
+              -p "$(cat "$ORCHESTRATOR_PROMPT_PATH")" \
               --model zai-coding-plan/glm-5 \
               --agent Orchestrator \
-              --print-logs \
-              "$(cat "$ORCHESTRATOR_PROMPT_PATH")"
+              -q \
+              -f text
