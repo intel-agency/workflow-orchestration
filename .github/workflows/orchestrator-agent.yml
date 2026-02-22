@@ -15,7 +15,7 @@ on:
     #   types: [completed, requested]
 
 jobs:
-  orchestrate:                                                                                                                                                                                                                                                                                      
+  orchestrate:
     runs-on: ubuntu-24.04
     permissions:
       id-token: write
@@ -26,7 +26,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
 
       - name: Assemble orchestrator prompt
         shell: bash
@@ -70,7 +70,7 @@ jobs:
       - name: Run orchestrator agent in devcontainer
         uses: devcontainers/ci@v0.3
         env:
-          ZHIPU_API_KEY: ${{ secrets.ZHIPU_API_KEY }}
+          ZHIPU_API_KEY: ${{ secrets.ZHIPU_API_KEY }} 
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           imageName: ghcr.io/${{ github.repository }}/devcontainer
