@@ -68,12 +68,13 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run orchestrator agent in devcontainer
-        uses: devcontainers/ci@v0.3
+        uses: devcontainers/ci@8bf61b26e9c3a98f69cb6ce2f88d24ff59b785c6  # v0.3
         env:
           ZHIPU_API_KEY: ${{ secrets.ZHIPU_API_KEY }} 
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           imageName: ghcr.io/${{ github.repository }}/devcontainer
+          imageTag: ${{ github.ref_name }}-latest
           cacheFrom: ghcr.io/${{ github.repository }}/devcontainer
           push: never
           env: |
