@@ -6,7 +6,7 @@ on:
     types:
       - completed
   schedule:
-    - cron: '0 0 * * 1' # Weekly on Monday at midnight UTC
+    - cron: '0 0 * * 1'   # Weekly on Monday at midnight UTC
   workflow_dispatch:
 
 env:
@@ -16,7 +16,7 @@ env:
 
 jobs:
   prebuild:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       packages: write
@@ -26,17 +26,18 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        # trunk-ignore(yamllint/line-length)
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
 
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3.4.0
+        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772  # v3.4.0
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Pre-build dev container image
-        uses: devcontainers/ci@v0.3
+        uses: devcontainers/ci@8bf61b26e9c3a98f69cb6ce2f88d24ff59b785c6
         id: prebuild
         with:
           subFolder: .github
