@@ -79,9 +79,9 @@ jobs:
           cacheFrom: ghcr.io/${{ github.repository }}/devcontainer
           push: never
           env: |
-            ZHIPU_API_KEY=${ZHIPU_API_KEY}
-            GITHUB_TOKEN=${GITHUB_TOKEN}
-            ORCHESTRATOR_PROMPT_PATH=${ORCHESTRATOR_PROMPT_PATH}
+            ZHIPU_API_KEY
+            GITHUB_TOKEN
+            ORCHESTRATOR_PROMPT_PATH
           runCmd: |
             set -euo pipefail
 
