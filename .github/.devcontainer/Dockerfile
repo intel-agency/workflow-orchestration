@@ -1,6 +1,7 @@
 FROM mcr.microsoft.com/devcontainers/base:ubuntu
 
 ARG DEBIAN_FRONTEND=noninteractive
+ARG OPENCODE_VERSION=1.2.10
 
 # System dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -31,5 +32,6 @@ RUN curl -LsSf https://astral.sh/uv/install.sh | sh \
     && chmod +x /usr/local/bin/uv /usr/local/bin/uvx
 
 # opencode CLI
-RUN bun add -g opencode-ai \
-    && ln -sf "${BUN_INSTALL}/bin/opencode" /usr/local/bin/opencode
+RUN curl -fsSL https://opencode.ai/install | bash -s -- --version "${OPENCODE_VERSION}" --no-modify-path \
+    && cp /root/.opencode/bin/opencode /usr/local/bin/opencode \
+    && chmod +x /usr/local/bin/opencode
