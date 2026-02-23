@@ -103,9 +103,19 @@ jobs:
             ORCHESTRATOR_PROMPT_CONTENT="$(cat "${ORCHESTRATOR_PROMPT_PATH}")"
 
             echo "Starting opencode at $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            set +e
             stdbuf -oL -eL timeout 10m opencode run \
               --model zai-coding-plan/glm-5 \
               --agent orchestrator \
               --print-logs \
               --log-level DEBUG \
               "${ORCHESTRATOR_PROMPT_CONTENT}" 2>&1
+            OPCODE_EXIT_CODE=$?
+            set -e
+
+            if [[ ${OPCODE_EXIT_CODE} -eq 124 ]]; then
+              echo "::warning::opencode run timed out after 10 minutes; continuing workflow"
+              exit 0
+            fi
+
+            exit ${OPCODE_EXIT_CODE}
