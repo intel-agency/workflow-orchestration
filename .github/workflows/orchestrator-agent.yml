@@ -11,8 +11,9 @@ on:
     types: [submitted, edited]
   pull_request:
     types: [opened, synchronize, reopened]
-    # workflow_run:
-    #   types: [completed, requested]
+  workflow_dispatch:
+  # workflow_run:
+  #   types: [completed, requested]
 
 jobs:
   orchestrate:
@@ -61,7 +62,7 @@ jobs:
           echo "ORCHESTRATOR_PROMPT_PATH=$ASSEMBLED_PROMPT" >> "$GITHUB_ENV"
 
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3.4.0
+        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772  # v3.4.0
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
@@ -72,19 +73,19 @@ jobs:
         env:
           ZHIPU_API_KEY: ${{ secrets.ZHIPU_API_KEY }} 
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with: 
+        with:
           imageName: ghcr.io/${{ github.repository }}/devcontainer
           imageTag: ${{ github.ref_name }}-latest
-          cacheFrom: ghcr.io/${{ github.repository }}/devcontainer      
+          cacheFrom: ghcr.io/${{ github.repository }}/devcontainer
           push: never
           env: |
             ZHIPU_API_KEY
             GITHUB_TOKEN
             ORCHESTRATOR_PROMPT_PATH
           runCmd: |
-            opencode \
-              -p "$(cat "$ORCHESTRATOR_PROMPT_PATH")" \
+            opencode run \
               --model zai-coding-plan/glm-5 \
               --agent Orchestrator \
-              -q \
-              -f text
+              --print-logs \
+              --log-level DEBUG \
+              "$(cat "$ORCHESTRATOR_PROMPT_PATH")"
