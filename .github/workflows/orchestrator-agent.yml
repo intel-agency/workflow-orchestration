@@ -85,7 +85,7 @@ jobs:
           runCmd: |
             opencode run \
               --model zai-coding-plan/glm-5 \
-              --agent Orchestrator \
+              --agent orchestrator \
               --print-logs \
               --log-level DEBUG \
-              "$(cat "$ORCHESTRATOR_PROMPT_PATH")"
+              "$(cat "$ORCHESTRATOR_PROMPT_PATH")" 2>&1
