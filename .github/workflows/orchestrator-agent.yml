@@ -71,7 +71,7 @@ jobs:
       - name: Run orchestrator agent in devcontainer
         uses: devcontainers/ci@8bf61b26e9c3a98f69cb6ce2f88d24ff59b785c6  # v0.3
         env:
-          ZHIPU_API_KEY: ${{ secrets.ZHIPU_API_KEY }} 
+          ZHIPU_API_KEY: ${{ secrets.ZHIPU_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           imageName: ghcr.io/${{ github.repository }}/devcontainer
@@ -79,13 +79,33 @@ jobs:
           cacheFrom: ghcr.io/${{ github.repository }}/devcontainer
           push: never
           env: |
-            ZHIPU_API_KEY
-            GITHUB_TOKEN
-            ORCHESTRATOR_PROMPT_PATH
+            ZHIPU_API_KEY=${ZHIPU_API_KEY}
+            GITHUB_TOKEN=${GITHUB_TOKEN}
+            ORCHESTRATOR_PROMPT_PATH=${ORCHESTRATOR_PROMPT_PATH}
           runCmd: |
-            opencode run \
+            set -euo pipefail
+
+            if [[ -z "${ZHIPU_API_KEY:-}" ]]; then
+              echo "::error::ZHIPU_API_KEY is not set"
+              exit 1
+            fi
+
+            if [[ -z "${ORCHESTRATOR_PROMPT_PATH:-}" ]]; then
+              echo "::error::ORCHESTRATOR_PROMPT_PATH is not set"
+              exit 1
+            fi
+
+            if [[ ! -s "${ORCHESTRATOR_PROMPT_PATH}" ]]; then
+              echo "::error::Prompt file not found or empty: ${ORCHESTRATOR_PROMPT_PATH}"
+              exit 1
+            fi
+
+            ORCHESTRATOR_PROMPT_CONTENT="$(cat "${ORCHESTRATOR_PROMPT_PATH}")"
+
+            echo "Starting opencode at $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            stdbuf -oL -eL timeout 10m opencode run \
               --model zai-coding-plan/glm-5 \
               --agent orchestrator \
               --print-logs \
               --log-level DEBUG \
-              "$(cat "$ORCHESTRATOR_PROMPT_PATH")" 2>&1
+              "${ORCHESTRATOR_PROMPT_CONTENT}" 2>&1
