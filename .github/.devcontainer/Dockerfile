@@ -5,7 +5,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 # System dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
       curl unzip git ca-certificates \
-    && rm -rf /var/lib/apt/lists/*888888888888888888888888888888888888888888888888888888
+    && rm -rf /var/lib/apt/lists/*
 
 # .NET SDK 10.0.102 LTS
 RUN curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin \
@@ -19,9 +19,10 @@ ENV PATH="${PATH}:${DOTNET_ROOT}:${DOTNET_ROOT}/tools"
 RUN dotnet new install Avalonia.Templates
 
 # Bun
+ENV BUN_INSTALL=/usr/local/bun
+ENV PATH="${BUN_INSTALL}/bin:${PATH}"
 RUN curl -fsSL https://bun.sh/install | bash \
-    && cp /root/.bun/bin/bun /usr/local/bin/bun \
-    && chmod +x /usr/local/bin/bun
+    && ln -sf "${BUN_INSTALL}/bin/bun" /usr/local/bin/bun
 
 # uv (Astral Python package manager)
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh \
@@ -30,8 +31,5 @@ RUN curl -LsSf https://astral.sh/uv/install.sh | sh \
     && chmod +x /usr/local/bin/uv /usr/local/bin/uvx
 
 # opencode CLI
-RUN curl -fsSL https://opencode.ai/install | bash \
-    && cp /root/.opencode/bin/opencode /usr/local/bin/opencode \
-    && chmod +x /usr/local/bin/opencode
-
-
+RUN bun add -g opencode-ai \
+    && ln -sf "${BUN_INSTALL}/bin/opencode" /usr/local/bin/opencode
