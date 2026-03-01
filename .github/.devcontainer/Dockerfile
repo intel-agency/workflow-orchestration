@@ -1,6 +1,7 @@
 FROM mcr.microsoft.com/devcontainers/base:ubuntu
 
 ARG DEBIAN_FRONTEND=noninteractive
+ARG OPENCODE_VERSION=1.2.10
 
 # System dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -15,14 +16,14 @@ RUN curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin \
 ENV DOTNET_ROOT=/usr/share/dotnet
 ENV PATH="${PATH}:${DOTNET_ROOT}:${DOTNET_ROOT}/tools"
 
-# .NET Aspire workload + Avalonia templates
-RUN dotnet workload install aspire \
-    && dotnet new install Avalonia.Templates
+# Avalonia templates
+RUN dotnet new install Avalonia.Templates
 
 # Bun
+ENV BUN_INSTALL=/usr/local/bun
+ENV PATH="${BUN_INSTALL}/bin:${PATH}"
 RUN curl -fsSL https://bun.sh/install | bash \
-    && cp /root/.bun/bin/bun /usr/local/bin/bun \
-    && chmod +x /usr/local/bin/bun
+    && ln -sf "${BUN_INSTALL}/bin/bun" /usr/local/bin/bun
 
 # uv (Astral Python package manager)
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh \
@@ -31,8 +32,6 @@ RUN curl -LsSf https://astral.sh/uv/install.sh | sh \
     && chmod +x /usr/local/bin/uv /usr/local/bin/uvx
 
 # opencode CLI
-RUN curl -fsSL https://opencode.ai/install | bash \
+RUN curl -fsSL https://opencode.ai/install | bash -s -- --version "${OPENCODE_VERSION}" --no-modify-path \
     && cp /root/.opencode/bin/opencode /usr/local/bin/opencode \
     && chmod +x /usr/local/bin/opencode
-
-

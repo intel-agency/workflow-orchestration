@@ -1,4 +1,19 @@
 {
+  "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "zai-coding-plan": {
+      "models": {
+        "glm-5": {
+          "name": "GLM-5",
+          "limit": {
+            "context": 200000,
+            "output": 131072
+          }
+        }
+      }
+    }
+  },
+  "model": "zai-coding-plan/glm-5",
   "mcp": {
     "sequential-thinking": {
       "type": "local",
@@ -6,16 +21,15 @@
         "npx",
         "-y",
         "@modelcontextprotocol/server-sequential-thinking"
-      ]     
+      ]
     },
     "memory": {
       "type": "local",
       "command": [
-        "npx",    
+        "npx",
         "-y",
         "@modelcontextprotocol/server-memory"
       ]
     }
-  },
-  "$schema": "https://opencode.ai/config.json"
+  }
 }

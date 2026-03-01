@@ -9,7 +9,7 @@ on:
 
 jobs:
   run-agent:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: write      # Allow agent to commit code
       pull-requests: write # Allow agent to comment/approve PRs
