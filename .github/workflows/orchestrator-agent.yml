@@ -15,7 +15,7 @@ on:
     #   types: [completed, requested]
 
 jobs:
-  orchestrate:                                                                                                                                                                                                                                                                                      
+  orchestrate:
     runs-on: ubuntu-24.04
     permissions:
       id-token: write
@@ -67,21 +67,23 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Run orchestrator agent in devcontainer
-        uses: devcontainers/ci@v0.3
+      - name: Install devcontainer CLI
+        run: npm install -g @devcontainers/cli
+
+      - name: Start devcontainer
+        run: |
+          devcontainer up \
+            --workspace-folder . \
+            --config .github/.devcontainer/devcontainer.json
+
+      - name: Execute orchestrator agent in devcontainer
         env:
           ZHIPU_API_KEY: ${{ secrets.ZHIPU_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          imageName: ghcr.io/${{ github.repository }}/devcontainer
-          cacheFrom: ghcr.io/${{ github.repository }}/devcontainer
-          push: never
-          env: |
-            ZHIPU_API_KEY
-            GITHUB_TOKEN
-            ORCHESTRATOR_PROMPT_PATH
-          runCmd: |
-            opencode \
-              --model zai-coding-plan/glm-5 \
-              --agent Orchestrator \
-              --prompt "$ORCHESTRATOR_PROMPT_PATH"
+        run: |
+          devcontainer exec \
+            --workspace-folder . \
+            --config .github/.devcontainer/devcontainer.json \
+            --remote-env ZHIPU_API_KEY="$ZHIPU_API_KEY" \
+            --remote-env GITHUB_TOKEN="$GITHUB_TOKEN" \
+            -- bash ./prompt.sh -f "$ORCHESTRATOR_PROMPT_PATH"
