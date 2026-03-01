@@ -17,19 +17,11 @@
   "mcp": {
     "sequential-thinking": {
       "type": "local",
-      "command": [
-        "npx",
-        "-y",
-        "@modelcontextprotocol/server-sequential-thinking"
-      ]
+      "command": ["bunx", "@modelcontextprotocol/server-sequential-thinking"]
     },
     "memory": {
       "type": "local",
-      "command": [
-        "npx",
-        "-y",
-        "@modelcontextprotocol/server-memory"
-      ]
+      "command": ["bunx", "@modelcontextprotocol/server-memory"]
     }
   }
 }
