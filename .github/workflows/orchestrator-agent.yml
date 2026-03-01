@@ -12,6 +12,11 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
   workflow_dispatch:
+    inputs:
+      prompt:
+        description: "Custom prompt to send to the orchestrator (bypasses event assembly)"
+        required: false
+        type: string
   # workflow_run:
   #   types: [completed, requested]
 
@@ -33,7 +38,17 @@ jobs:
         shell: bash
         env:
           EVENT_JSON: ${{ toJson(github.event) }}
+          CUSTOM_PROMPT: ${{ inputs.prompt }}
         run: |
+          ASSEMBLED_PROMPT=".assembled-orchestrator-prompt.md"
+
+          # If a custom prompt was provided via workflow_dispatch, use it directly
+          if [[ -n "${CUSTOM_PROMPT}" ]]; then
+            echo "${CUSTOM_PROMPT}" > "$ASSEMBLED_PROMPT"
+            echo "ORCHESTRATOR_PROMPT_PATH=$ASSEMBLED_PROMPT" >> "$GITHUB_ENV"
+            exit 0
+          fi
+
           # Build the structured event context + JSON blob to inject
           EVENT_BLOCK=$(cat <<'BLOCK_END'
           Event Name: ${{ github.event_name }}
@@ -47,7 +62,6 @@ jobs:
 
           # Assemble prompt in the workspace so it's available inside the devcontainer
           PROMPT_TEMPLATE=".github/workflows/prompts/orchestrator-agent-prompt.md"
-          ASSEMBLED_PROMPT=".assembled-orchestrator-prompt.md"
 
           # Replace __EVENT_DATA__ placeholder with structured context + full event JSON
           {
@@ -68,6 +82,15 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Verify devcontainer image exists
+        run: |
+          IMAGE="ghcr.io/intel-agency/workflow-orchestration/devcontainer:main-latest"
+          if ! docker manifest inspect "$IMAGE" > /dev/null 2>&1; then
+            echo "::error::Devcontainer image not found: $IMAGE"
+            echo "::error::Run the 'Publish Docker' and 'Pre-build dev container image' workflows first."
+            exit 1
+          fi
+
       - name: Install devcontainer CLI
         run: npm install -g @devcontainers/cli
 
@@ -87,42 +110,4 @@ jobs:
             --config .github/.devcontainer/devcontainer.json \
             --remote-env ZHIPU_API_KEY="$ZHIPU_API_KEY" \
             --remote-env GITHUB_TOKEN="$GITHUB_TOKEN" \
-            --remote-env ORCHESTRATOR_PROMPT_PATH="$ORCHESTRATOR_PROMPT_PATH" \
-            -- bash -c '
-              set -euo pipefail
-
-              if [[ -z "${ZHIPU_API_KEY:-}" ]]; then
-                echo "::error::ZHIPU_API_KEY is not set"
-                exit 1
-              fi
-
-              if [[ -z "${ORCHESTRATOR_PROMPT_PATH:-}" ]]; then
-                echo "::error::ORCHESTRATOR_PROMPT_PATH is not set"
-                exit 1
-              fi
-
-              if [[ ! -s "${ORCHESTRATOR_PROMPT_PATH}" ]]; then
-                echo "::error::Prompt file not found or empty: ${ORCHESTRATOR_PROMPT_PATH}"
-                exit 1
-              fi
-
-              ORCHESTRATOR_PROMPT_CONTENT="$(cat "${ORCHESTRATOR_PROMPT_PATH}")"
-
-              echo "Starting opencode at $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-              set +e
-              stdbuf -oL -eL timeout 10m opencode run \
-                --model zai-coding-plan/glm-5 \
-                --agent orchestrator \
-                --print-logs \
-                --log-level DEBUG \
-                "${ORCHESTRATOR_PROMPT_CONTENT}" 2>&1
-              OPCODE_EXIT_CODE=$?
-              set -e
-
-              if [[ ${OPCODE_EXIT_CODE} -eq 124 ]]; then
-                echo "::warning::opencode run timed out after 10 minutes; continuing workflow"
-                exit 0
-              fi
-
-              exit ${OPCODE_EXIT_CODE}
-            '
+            -- bash ./prompt.sh -f "$ORCHESTRATOR_PROMPT_PATH"

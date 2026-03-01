@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-
-remote_dir="/home/nam20485/src/github/nam20485/dynamic_workflows/profile-genie-india58-a" #/src/github/nam20485/OdbDesign
+set -euo pipefail
 
 usage() {
     echo "Usage: $0 -f <file> | -p <prompt>" >&2
@@ -21,8 +20,25 @@ if [ -z "$prompt" ]; then
     usage
 fi
 
-opencode run --attach http://localhost:4096 \
-    --dir "$remote_dir" \
-    --model glm-4.5-AirX \
-    --agent Orchestrator \
-    "$prompt"
+if [[ -z "${ZHIPU_API_KEY:-}" ]]; then
+    echo "::error::ZHIPU_API_KEY is not set" >&2
+    exit 1
+fi
+
+echo "Starting opencode at $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+set +e
+stdbuf -oL -eL timeout 10m opencode run \
+    --model zai-coding-plan/glm-5 \
+    --agent orchestrator \
+    --print-logs \
+    --log-level DEBUG \
+    "$prompt" 2>&1
+OPENCODE_EXIT=$?
+set -e
+
+if [[ ${OPENCODE_EXIT} -eq 124 ]]; then
+    echo "::warning::opencode run timed out after 10 minutes; continuing workflow"
+    exit 0
+fi
+
+exit ${OPENCODE_EXIT}
