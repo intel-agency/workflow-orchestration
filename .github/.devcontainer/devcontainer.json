@@ -4,7 +4,7 @@
   "containerEnv": {
     "DOTNET_ROOT": "/usr/share/dotnet",
   },
-  "onCreateCommand": "bun install -g @modelcontextprotocol/server-sequential-thinking @modelcontextprotocol/server-memory && cd .opencode && bun install",
+  "onCreateCommand": "bun config set globalBinDir /usr/local/bin && bun install -g @modelcontextprotocol/server-sequential-thinking @modelcontextprotocol/server-memory && cd .opencode && bun install",
   "customizations": {
     "vscode": {
       "extensions": [
