@@ -5,19 +5,21 @@ usage() {
     echo "Usage: $0 -f <file> | -p <prompt> [-a <url>] [-u <user>] [-P <pass>] [-d <dir>] [-l <log-level>] [-L]" >&2
     echo "  -f <file>       Read prompt from file" >&2
     echo "  -p <prompt>     Use prompt string directly" >&2
-    echo "  -a <url>        Attach to a running opencode server (e.g. http://localhost:4096)" >&2
-    echo "  -u <user>       Basic auth username (used with -a)" >&2
-    echo "  -P <pass>       Basic auth password (used with -a)" >&2
+    echo "  -a <url>        Attach to a running opencode server (e.g. https://host:4096)" >&2
+    echo "  -u <user>       Basic auth username (prefer env var OPENCODE_AUTH_USER)" >&2
+    echo "  -P <pass>       Basic auth password (prefer env var OPENCODE_AUTH_PASS)" >&2
     echo "  -d <dir>        Working directory on the server (used with -a)" >&2
     echo "  -l <log-level>  opencode log level (DEBUG|INFO|WARN|ERROR), default: INFO" >&2
     echo "  -L              Enable --print-logs (disabled by default)" >&2
+    echo "" >&2
+    echo "  Credentials are resolved in order: flags > env vars OPENCODE_AUTH_USER / OPENCODE_AUTH_PASS" >&2
     exit 1
 }
 
 prompt=""
 attach_url=""
-auth_user=""
-auth_pass=""
+auth_user="${OPENCODE_AUTH_USER:-}"   # prefer env vars — flags override if provided
+auth_pass="${OPENCODE_AUTH_PASS:-}"
 work_dir=""
 log_level="INFO"
 print_logs=""
@@ -46,13 +48,16 @@ if [[ -z "${ZHIPU_API_KEY:-}" ]]; then
 fi
 
 # Embed basic auth credentials into the attach URL if provided
-# http://host:port  →  http://user:pass@host:port
 if [[ -n "$attach_url" && -n "$auth_user" && -n "$auth_pass" ]]; then
+    # Warn if credentials are being sent over plain HTTP
+    if [[ "$attach_url" == http://* ]]; then
+        echo "::warning::Basic auth credentials over http:// are sent in plaintext — use https://" >&2
+    fi
     scheme="${attach_url%%://*}"
     rest="${attach_url#*://}"
     attach_url="${scheme}://${auth_user}:${auth_pass}@${rest}"
-elif [[ -n "$auth_user" || -n "$auth_pass" ]] && [[ -z "$attach_url" ]]; then
-    echo "::error::-u/-P require -a <url>" >&2
+elif [[ ( -n "$auth_user" || -n "$auth_pass" ) && -z "$attach_url" ]]; then
+    echo "::error::OPENCODE_AUTH_USER/PASS (or -u/-P) require -a <url>" >&2
     exit 1
 fi
 

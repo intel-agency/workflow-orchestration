@@ -4,8 +4,8 @@ param(
     [string]$File,
     [string]$Prompt,
     [string]$Attach,
-    [string]$Username,
-    [string]$Password,
+    [string]$Username,   # prefer env var OPENCODE_AUTH_USER
+    [string]$Password,   # prefer env var OPENCODE_AUTH_PASS
     [string]$Dir,
     [ValidateSet("DEBUG","INFO","WARN","ERROR")]
     [string]$LogLevel = "INFO",
@@ -25,16 +25,31 @@ if ($File)
     exit 1
 }
 
+# Credentials: flags take precedence over env vars
+$user = if ($Username)
+{ $Username 
+} else
+{ $env:OPENCODE_AUTH_USER 
+}
+$pass = if ($Password)
+{ $Password 
+} else
+{ $env:OPENCODE_AUTH_PASS 
+}
+
 # Embed basic auth credentials into the attach URL if provided
-# http://host:port  ->  http://user:pass@host:port
 $attachUrl = $Attach
-if ($attachUrl -and $Username -and $Password)
+if ($attachUrl -and $user -and $pass)
 {
+    if ($attachUrl -match '^http://')
+    {
+        Write-Warning "Basic auth credentials over http:// are sent in plaintext — use https://"
+    }
     $uri = [System.Uri]$attachUrl
-    $attachUrl = "$($uri.Scheme)://${Username}:${Password}@$($uri.Authority)$($uri.PathAndQuery)"
-} elseif (($Username -or $Password) -and -not $attachUrl)
+    $attachUrl = "$($uri.Scheme)://${user}:${pass}@$($uri.Authority)$($uri.PathAndQuery)"
+} elseif (($user -or $pass) -and -not $attachUrl)
 {
-    Write-Error "-Username/-Password require -Attach <url>"
+    Write-Error "OPENCODE_AUTH_USER/PASS (or -Username/-Password) require -Attach <url>"
     exit 1
 }
 
