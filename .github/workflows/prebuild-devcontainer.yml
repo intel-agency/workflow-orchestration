@@ -46,6 +46,17 @@ jobs:
           imageTag: ${{ github.ref_name }}-latest,${{ github.ref_name }}-${{ env.VERSION_IMAGE_TAG }}
           push: never
 
+      - name: Strip stale devcontainer metadata before push
+        env:
+          VERSIONED_IMAGE_FULL: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}-${{ env.VERSION_IMAGE_TAG }}
+          LATEST_IMAGE_FULL: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}-latest
+        run: |
+          # Remove accumulated devcontainer.metadata labels so downstream
+          # consumers don't replay stale onCreateCommand entries
+          for IMG in "$VERSIONED_IMAGE_FULL" "$LATEST_IMAGE_FULL"; do
+            echo "FROM $IMG" | docker build --label devcontainer.metadata='[]' -t "$IMG" -
+          done
+
       - name: Push images to registry
         env:
           VERSIONED_IMAGE_FULL: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}-${{ env.VERSION_IMAGE_TAG }}

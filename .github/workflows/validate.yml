@@ -71,8 +71,17 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Pull and clean devcontainer image metadata
+        run: |
+          IMAGE="ghcr.io/${{ github.repository }}/devcontainer:main-latest"
+          docker pull "$IMAGE" || true
+          # Strip stale devcontainer.metadata label from cached prebuild
+          if docker image inspect "$IMAGE" > /dev/null 2>&1; then
+            echo "FROM $IMAGE" | docker build --label devcontainer.metadata='[]' -t "$IMAGE" -
+          fi
+
       - name: Build devcontainer and run smoke tests
-        uses: devcontainers/ci@v0.3
+        uses: devcontainers/ci@8bf61b26e9c3a98f69cb6ce2f88d24ff59b785c6 # v0.3
         with:
           imageName: ghcr.io/${{ github.repository }}/devcontainer
           cacheFrom: ghcr.io/${{ github.repository }}/devcontainer
